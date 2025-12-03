@@ -1,41 +1,16 @@
 use std::io::{self, BufRead};
 use std::{fs::File, io::BufReader};
 
-fn sub_string(string: &str, len: usize) -> Vec<String> {
-    let mut chars = string.chars();
-
-    (0..)
-        .map(|_| chars.by_ref().take(len).collect::<String>())
-        .take_while(|s| !s.is_empty())
-        .collect::<Vec<_>>()
-}
-
-// TODO: Get [N] digits and then repeat them for the length of the id. If it matches the id, it's invalid.
 fn is_invalid(id: &str) -> bool {
     let len = id.len();
     let end = len / 2;
 
     for n in 1..=end {
-        let mut repeats: i8 = 1;
-        let mut invalid = true;
-        let digits = sub_string(id, n);
+        let digits = &id[0..n];
+        let repeats = len / n;
+        let repeated = digits.repeat(repeats);
 
-        'inner: for (i, curr) in digits.iter().by_ref().enumerate() {
-            if i == 0 {
-                continue;
-            }
-
-            if let Some(prev) = digits.get(i - 1) {
-                if prev != curr {
-                    invalid = false;
-                    break 'inner;
-                } else {
-                    repeats += 1;
-                }
-            }
-        }
-
-        if invalid && repeats >= 2 {
+        if repeated == id && repeats >= 2 {
             return true;
         }
     }
@@ -43,12 +18,12 @@ fn is_invalid(id: &str) -> bool {
     false
 }
 
-fn verify_range(range: &str) -> Vec<i64> {
-    let mut invalid_ids: Vec<i64> = Vec::new();
+fn verify_range(range: &str) -> Vec<u64> {
+    let mut invalid_ids: Vec<u64> = Vec::new();
     let (start, end) = range.split_once("-").unwrap();
-    let i_start = start.parse::<i64>().unwrap();
+    let i_start = start.parse::<u64>().unwrap();
     let i_end = end
-        .parse::<i64>()
+        .parse::<u64>()
         .map_err(|e| eprintln!("Failed to parse {end} - {}", e))
         .unwrap();
 
@@ -64,7 +39,7 @@ fn verify_range(range: &str) -> Vec<i64> {
 fn main() -> io::Result<()> {
     let file = File::open("input.txt")?;
     let reader = BufReader::new(file);
-    let mut invalid_ids: Vec<i64> = Vec::new();
+    let mut invalid_ids: Vec<u64> = Vec::new();
 
     for id_range in reader.split(b',') {
         if id_range.is_err() {
@@ -84,7 +59,7 @@ fn main() -> io::Result<()> {
 
     println!(
         "The sum of all invalid ids is {}",
-        invalid_ids.iter().sum::<i64>()
+        invalid_ids.iter().sum::<u64>()
     );
     Ok(())
 }
@@ -121,7 +96,7 @@ mod tests {
             ("2121212118-2121212124", vec![2121212121]),
         ];
 
-        let mut invalid_ids: Vec<i64> = Vec::new();
+        let mut invalid_ids: Vec<u64> = Vec::new();
 
         for (range, result) in fixtures {
             let ids = verify_range(range);
