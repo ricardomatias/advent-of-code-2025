@@ -10,6 +10,7 @@ fn sub_string(string: &str, len: usize) -> Vec<String> {
         .collect::<Vec<_>>()
 }
 
+// TODO: Get [N] digits and then repeat them for the length of the id. If it matches the id, it's invalid.
 fn is_invalid(id: &str) -> bool {
     let len = id.len();
     let end = len / 2;
