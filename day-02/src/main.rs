@@ -1,18 +1,48 @@
 use std::io::{self, BufRead};
 use std::{fs::File, io::BufReader};
 
-fn is_invalid(id: &str) -> bool {
-    let len = id.len();
-    if len.is_multiple_of(2) {
-        let (pre, post) = id.split_at(len / 2);
+fn sub_string(string: &str, len: usize) -> Vec<String> {
+    let mut chars = string.chars();
 
-        pre == post
-    } else {
-        false
-    }
+    (0..)
+        .map(|_| chars.by_ref().take(len).collect::<String>())
+        .take_while(|s| !s.is_empty())
+        .collect::<Vec<_>>()
 }
 
-fn verify_range(range: &str) -> Option<Vec<i64>> {
+fn is_invalid(id: &str) -> bool {
+    let len = id.len();
+    let end = len / 2;
+
+    for n in 1..=end {
+        let mut repeats: i8 = 1;
+        let mut invalid = true;
+        let digits = sub_string(id, n);
+
+        'inner: for (i, curr) in digits.iter().by_ref().enumerate() {
+            if i == 0 {
+                continue;
+            }
+
+            if let Some(prev) = digits.get(i - 1) {
+                if prev != curr {
+                    invalid = false;
+                    break 'inner;
+                } else {
+                    repeats += 1;
+                }
+            }
+        }
+
+        if invalid && repeats >= 2 {
+            return true;
+        }
+    }
+
+    false
+}
+
+fn verify_range(range: &str) -> Vec<i64> {
     let mut invalid_ids: Vec<i64> = Vec::new();
     let (start, end) = range.split_once("-").unwrap();
     let i_start = start.parse::<i64>().unwrap();
@@ -27,7 +57,7 @@ fn verify_range(range: &str) -> Option<Vec<i64>> {
         }
     }
 
-    Some(invalid_ids)
+    invalid_ids
 }
 
 fn main() -> io::Result<()> {
@@ -42,16 +72,13 @@ fn main() -> io::Result<()> {
 
         let id_range = str::from_utf8(&id_range.unwrap())
             .unwrap()
+            // otherwise it fails on the last line
             .trim_end()
             .to_owned();
-        print!("Checking {}. Invalid = ", id_range);
-        if let Some(invalid) = verify_range(&id_range) {
-            for id in invalid.iter() {
-                print!("{id}, ");
-            }
-            println!();
-            invalid_ids.extend(invalid);
-        }
+
+        let invalid = verify_range(&id_range);
+
+        invalid_ids.extend(invalid);
     }
 
     println!(
@@ -63,18 +90,43 @@ fn main() -> io::Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use crate::verify_range;
+    use crate::{is_invalid, verify_range};
 
     #[test]
-    fn test_ranges() {
-        assert_eq!(verify_range("11-22"), Some(vec![11, 22]));
-        assert_eq!(verify_range("95-115"), Some(vec![99]));
-        assert_eq!(
-            verify_range("1188511880-1188511890"),
-            Some(vec![1188511885])
-        );
-        assert_eq!(verify_range("222220-222224"), Some(vec![222222]));
-        assert_eq!(verify_range("1698522-1698528"), Some(vec![]));
-        assert_eq!(verify_range("53-77"), Some(vec![55, 66, 77]));
+    fn test_is_invalid() {
+        assert!(is_invalid("1212121212"));
+    }
+
+    #[test]
+    fn test_ranges_day_one() {
+        assert_eq!(verify_range("11-22"), vec![11, 22]);
+        assert_eq!(verify_range("95-115"), vec![99, 111]);
+        assert_eq!(verify_range("1188511880-1188511890"), vec![1188511885]);
+        assert_eq!(verify_range("222220-222224"), vec![222222]);
+        assert_eq!(verify_range("1698522-1698528"), vec![]);
+        assert_eq!(verify_range("53-77"), vec![55, 66, 77]);
+    }
+    #[test]
+    fn test_ranges_day_two() {
+        let fixtures = vec![
+            ("11-22", vec![11, 22]),
+            ("95-115", vec![99, 111]),
+            ("998-1012", vec![999, 1010]),
+            ("1188511880-1188511890", vec![1188511885]),
+            ("222220-222224", vec![222222]),
+            ("1698522-1698528", vec![]),
+            ("446443-446449", vec![446446]),
+            ("565653-565659", vec![565656]),
+            ("2121212118-2121212124", vec![2121212121]),
+        ];
+
+        let mut invalid_ids: Vec<i64> = Vec::new();
+
+        for (range, result) in fixtures {
+            let ids = verify_range(range);
+            assert_eq!(ids, result);
+
+            invalid_ids.extend(ids);
+        }
     }
 }
