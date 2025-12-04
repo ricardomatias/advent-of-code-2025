@@ -2,4 +2,4 @@
 
 - [x] Day 1: Secret Entrance
 - [x] Day 2: Gift Shop
-
+- [x] Day 3: Lobby
